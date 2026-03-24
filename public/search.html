@@ -46,7 +46,7 @@
     <div class="search-section">
       <p class="section-label">Section 2</p>
       <h2>How much time do you have?</h2>
-      <p class="form-hint">Includes all prep, marinating, and cooking time.</p>
+      <p class="form-hint" id="time-hint">Includes all prep, marinating, and cooking time.</p>
       <div class="slider-row">
         <input
           class="time-slider"
@@ -59,6 +59,17 @@
         >
         <span class="time-display" id="time-display">60 minutes</span>
       </div>
+
+      <!-- Passive time toggle -->
+      <div class="passive-toggle">
+        <label class="passive-toggle-label">
+          <input type="checkbox" id="passive-ok">
+          <span>I don't mind waiting for passive steps</span>
+        </label>
+        <p class="form-hint" style="margin-top: 0.3rem; padding-left: 1.6rem;">
+          e.g. marinating, baking, slow cooking — time where you're not actively needed
+        </p>
+      </div>
     </div>
 
     <!-- ── Section 3: Cuisine preference ────────────────────── -->
@@ -67,22 +78,17 @@
       <h2>Cuisine preference</h2>
       <p class="form-hint">Select as many as you like. Leave "Any" checked for no preference.</p>
 
-      <div class="cuisine-grid">
-        <!-- "Any" unchecks all others when selected -->
+      <!-- Top-level cuisine options -->
+      <div class="cuisine-options">
         <label class="cuisine-option" id="cuisine-any-label">
           <input type="checkbox" name="cuisine" value="Any" id="cuisine-any" checked>
           Any cuisine
         </label>
 
+        <!-- Asian — has expandable sub-cuisines -->
         <label class="cuisine-option">
-          <input type="checkbox" name="cuisine" value="Asian">
+          <input type="checkbox" name="cuisine" value="Asian" id="cuisine-asian">
           Asian
-        </label>
-
-        <!-- Vietnamese is a sub-cuisine of Asian — visually indented -->
-        <label class="cuisine-option sub" id="cuisine-viet-label">
-          <input type="checkbox" name="cuisine" value="Vietnamese" id="cuisine-viet">
-          ↳ Vietnamese
         </label>
 
         <label class="cuisine-option">
@@ -106,10 +112,30 @@
         </label>
       </div>
 
-      <!-- Shown only when Vietnamese is checked, to explain the override behaviour -->
-      <p class="cuisine-hint" id="viet-hint" style="display:none;">
-        ⚠️ Vietnamese selected — the AI will suggest <strong>only Vietnamese recipes</strong>, overriding any other Asian selection.
-      </p>
+      <!-- Asian sub-cuisines — hidden until Asian is checked -->
+      <!-- To add sub-cuisines for another parent (e.g. Italian), follow the same pattern -->
+      <div class="cuisine-sub-group" id="subs-Asian">
+        <p class="sub-group-label">Specific Asian cuisine <span style="font-weight:400;">(optional — leave all unchecked for any Asian)</span></p>
+        <div class="cuisine-sub-options">
+          <label class="cuisine-option sub">
+            <input type="checkbox" name="cuisine-sub" data-parent="Asian" value="Vietnamese">
+            Vietnamese
+          </label>
+          <label class="cuisine-option sub">
+            <input type="checkbox" name="cuisine-sub" data-parent="Asian" value="Korean">
+            Korean
+          </label>
+          <label class="cuisine-option sub">
+            <input type="checkbox" name="cuisine-sub" data-parent="Asian" value="Chinese">
+            Chinese
+          </label>
+          <label class="cuisine-option sub">
+            <input type="checkbox" name="cuisine-sub" data-parent="Asian" value="Japanese">
+            Japanese
+          </label>
+        </div>
+        <p class="cuisine-hint" id="sub-selected-hint" style="display:none;"></p>
+      </div>
     </div>
 
     <!-- ── Section 4: Grain preference ─────────────────────── -->

@@ -356,41 +356,93 @@ body {
   font-size: 1.05rem;
 }
 
-/* Cuisine checkboxes */
-.cuisine-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+/* Cuisine checkboxes — top-level options in a flex-wrap row */
+.cuisine-options {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.25rem;
 }
 
 .cuisine-option {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.92rem;
   transition: border-color 0.15s, background 0.15s;
   user-select: none;
+  white-space: nowrap;
 }
 .cuisine-option:hover { border-color: var(--primary); background: var(--primary-light); }
 .cuisine-option input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; flex-shrink: 0; }
 
-/* Vietnamese is visually indented as a sub-cuisine under Asian */
-.cuisine-option.sub {
-  padding-left: 1.75rem;
-  color: var(--muted);
-  font-style: italic;
+/* Sub-cuisine group — hidden by default, shown when parent is checked */
+.cuisine-sub-group {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--primary-light);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
 }
-.cuisine-option.sub:hover { color: var(--text); }
+.cuisine-sub-group.open { display: block; }
+
+.sub-group-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--secondary-text);
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cuisine-sub-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Sub-cuisine chips look slightly different from parent options */
+.cuisine-option.sub {
+  background: #fff;
+  border-color: var(--primary);
+  font-size: 0.88rem;
+}
+.cuisine-option.sub:hover { background: var(--bg); }
 
 .cuisine-hint {
   font-size: 0.82rem;
-  color: var(--muted);
-  margin-top: 0.5rem;
+  color: var(--secondary-text);
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+/* Passive time toggle */
+.passive-toggle {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.passive-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  user-select: none;
+}
+.passive-toggle-label input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* ============================================================

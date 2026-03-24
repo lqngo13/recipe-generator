@@ -2,14 +2,11 @@
 // Recipes route: calls the Gemini AI API to suggest recipes
 // -------------------------------------------------------
 
-const express                = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const db                     = require('../db/database');
-const requireAuth            = require('../middleware/requireAuth');
+const express     = require('express');
+const db          = require('../db/database');
+const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
-const genAI  = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model  = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 router.use(requireAuth);
 
@@ -106,8 +103,25 @@ Rules:
 - sourceUrl: ONLY include a real URL if this recipe comes from a well-known published source you are certain about (e.g. seriouseats.com, bonappetit.com, allrecipes.com, bbcgoodfood.com). If the recipe is a generic suggestion or you have any doubt the URL exists, set sourceUrl to null. Do not guess or invent URLs.`;
 
   try {
-    const result       = await model.generateContent(prompt);
-    const responseText = extractJSON(result.response.text());
+    // Call the Gemini REST API directly (no SDK)
+    // URL is built here (not at startup) so the API key is always read from the loaded .env
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const apiRes = await fetch(geminiUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      }),
+    });
+
+    if (!apiRes.ok) {
+      const errBody = await apiRes.json();
+      throw new Error(JSON.stringify(errBody));
+    }
+
+    const apiData      = await apiRes.json();
+    const rawText      = apiData.candidates[0].content.parts[0].text;
+    const responseText = extractJSON(rawText);
     const recipes      = JSON.parse(responseText);
 
     res.json({ recipes, pantryItems });

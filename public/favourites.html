@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Favourites — Recipe Suggester</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="/dashboard.html" class="nav-brand">🍳 Recipe Suggester</a>
+    <div class="nav-links">
+      <a href="/search.html">Find Recipes</a>
+      <a href="/favourites.html">My Favourites</a>
+      <a href="/pantry.html">My Pantry</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn btn-ghost" id="logout-btn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1 class="page-title">My Favourites</h1>
+    <p class="page-subtitle">Recipes you've saved to make again.</p>
+
+    <!-- List is populated by favourites.js -->
+    <div id="favourites-list"></div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/favourites.js"></script>
+</body>
+</html>

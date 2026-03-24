@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Pantry — Recipe Suggester</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="/dashboard.html" class="nav-brand">🍳 Recipe Suggester</a>
+    <div class="nav-links">
+      <a href="/search.html">Find Recipes</a>
+      <a href="/favourites.html">My Favourites</a>
+      <a href="/pantry.html">My Pantry</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn btn-ghost" id="logout-btn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1 class="page-title">My Pantry</h1>
+    <p class="page-subtitle">
+      Staples you always have on hand. These are automatically included in every recipe search — no need to type them every time.
+    </p>
+
+    <div class="card">
+      <!-- Input for adding a new item -->
+      <div class="form-group">
+        <label class="form-label" for="pantry-input">Add an item</label>
+        <p class="form-hint">Type an ingredient and press Enter or click Add.</p>
+        <div style="display: flex; gap: 0.75rem;">
+          <input
+            class="form-input"
+            type="text"
+            id="pantry-input"
+            placeholder="e.g. olive oil, garlic, soy sauce"
+            autocomplete="off"
+          >
+          <button class="btn btn-outline" id="add-btn" type="button">Add</button>
+        </div>
+      </div>
+
+      <!-- Live chip list — items appear here as they're added -->
+      <div>
+        <p class="form-label">Your pantry items</p>
+        <div class="chip-list" id="chip-list">
+          <!-- Chips are inserted here by pantry.js -->
+        </div>
+        <p class="text-sm text-muted mt-1" id="empty-hint" style="display:none;">
+          No items yet — add some above.
+        </p>
+      </div>
+
+      <!-- Save button -->
+      <div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+        <button class="btn btn-primary" id="save-btn" type="button">Save Pantry</button>
+        <span class="text-sm text-muted" id="save-status"></span>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/pantry.js"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Recipes — Recipe Suggester</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="/dashboard.html" class="nav-brand">🍳 Recipe Suggester</a>
+    <div class="nav-links">
+      <a href="/search.html">Find Recipes</a>
+      <a href="/favourites.html">My Favourites</a>
+      <a href="/pantry.html">My Pantry</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn btn-ghost" id="logout-btn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1 class="page-title">Find Recipes</h1>
+    <p class="page-subtitle">Fill in what you have and we'll suggest five recipes.</p>
+
+    <!-- ── Section 1: Fridge ingredients ───────────────────── -->
+    <div class="search-section">
+      <p class="section-label">Section 1</p>
+      <h2>What's in your fridge?</h2>
+      <div class="form-group" style="margin-bottom:0">
+        <p class="form-hint">
+          Type the fresh ingredients you have available. Your saved pantry staples are added automatically.
+        </p>
+        <textarea
+          class="form-textarea"
+          id="fridge-input"
+          placeholder="e.g. chicken thighs, lemon, broccoli, soy sauce, eggs"
+          rows="3"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Time slider ───────────────────────────── -->
+    <div class="search-section">
+      <p class="section-label">Section 2</p>
+      <h2>How much time do you have?</h2>
+      <p class="form-hint">Includes all prep, marinating, and cooking time.</p>
+      <div class="slider-row">
+        <input
+          class="time-slider"
+          type="range"
+          id="time-slider"
+          min="10"
+          max="240"
+          step="5"
+          value="60"
+        >
+        <span class="time-display" id="time-display">60 minutes</span>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Cuisine preference ────────────────────── -->
+    <div class="search-section">
+      <p class="section-label">Section 3</p>
+      <h2>Cuisine preference</h2>
+      <p class="form-hint">Select as many as you like. Leave "Any" checked for no preference.</p>
+
+      <div class="cuisine-grid">
+        <!-- "Any" unchecks all others when selected -->
+        <label class="cuisine-option" id="cuisine-any-label">
+          <input type="checkbox" name="cuisine" value="Any" id="cuisine-any" checked>
+          Any cuisine
+        </label>
+
+        <label class="cuisine-option">
+          <input type="checkbox" name="cuisine" value="Asian">
+          Asian
+        </label>
+
+        <!-- Vietnamese is a sub-cuisine of Asian — visually indented -->
+        <label class="cuisine-option sub" id="cuisine-viet-label">
+          <input type="checkbox" name="cuisine" value="Vietnamese" id="cuisine-viet">
+          ↳ Vietnamese
+        </label>
+
+        <label class="cuisine-option">
+          <input type="checkbox" name="cuisine" value="Italian">
+          Italian
+        </label>
+
+        <label class="cuisine-option">
+          <input type="checkbox" name="cuisine" value="Mexican">
+          Mexican
+        </label>
+
+        <label class="cuisine-option">
+          <input type="checkbox" name="cuisine" value="Mediterranean">
+          Mediterranean
+        </label>
+
+        <label class="cuisine-option">
+          <input type="checkbox" name="cuisine" value="American / Comfort Food">
+          American / Comfort Food
+        </label>
+      </div>
+
+      <!-- Shown only when Vietnamese is checked, to explain the override behaviour -->
+      <p class="cuisine-hint" id="viet-hint" style="display:none;">
+        ⚠️ Vietnamese selected — the AI will suggest <strong>only Vietnamese recipes</strong>, overriding any other Asian selection.
+      </p>
+    </div>
+
+    <!-- ── Section 4: Grain preference ─────────────────────── -->
+    <div class="search-section">
+      <p class="section-label">Section 4</p>
+      <h2>Preferred grain <span style="font-weight:400; color:var(--muted);">(optional)</span></h2>
+      <select class="form-select" id="grain-select">
+        <option value="No preference">No preference</option>
+        <option value="Rice">Rice</option>
+        <option value="Noodles / Vermicelli">Noodles / Vermicelli</option>
+        <option value="Pasta">Pasta</option>
+        <option value="Bread">Bread</option>
+      </select>
+    </div>
+
+    <!-- ── Section 5: Additional notes ─────────────────────── -->
+    <div class="search-section">
+      <p class="section-label">Section 5</p>
+      <h2>Anything else? <span style="font-weight:400; color:var(--muted);">(optional)</span></h2>
+      <input
+        class="form-input"
+        type="text"
+        id="notes-input"
+        placeholder="e.g. nothing spicy, something light, no nuts"
+      >
+    </div>
+
+    <!-- ── Find Recipes button ──────────────────────────────── -->
+    <button class="btn btn-primary btn-lg" id="search-btn" type="button">
+      Find Recipes
+    </button>
+
+    <!-- Loading state — hidden until search is in progress -->
+    <div class="loading-state" id="loading-state" style="display:none;">
+      <span class="loading-spinner">🍳</span>
+      <p>Asking the AI for recipe ideas…</p>
+    </div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/search.js"></script>
+</body>
+</html>

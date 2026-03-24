@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe — Recipe Suggester</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="/dashboard.html" class="nav-brand">🍳 Recipe Suggester</a>
+    <div class="nav-links">
+      <a href="/search.html">Find Recipes</a>
+      <a href="/favourites.html">My Favourites</a>
+      <a href="/pantry.html">My Pantry</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn btn-ghost" id="logout-btn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <!-- Recipe content is injected here by recipe.js -->
+    <div id="recipe-content"></div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/recipe.js"></script>
+</body>
+</html>

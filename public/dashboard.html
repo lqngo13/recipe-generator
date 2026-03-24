@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Recipe Suggester</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="/dashboard.html" class="nav-brand">🍳 Recipe Suggester</a>
+    <div class="nav-links">
+      <a href="/search.html">Find Recipes</a>
+      <a href="/favourites.html">My Favourites</a>
+      <a href="/pantry.html">My Pantry</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn btn-ghost" id="logout-btn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1 class="dashboard-greeting">Hi, <span id="greeting-name"></span> 👋</h1>
+    <p class="page-subtitle">Ready to find something delicious?</p>
+
+    <div class="dashboard-grid">
+      <!-- Primary CTA -->
+      <a href="/search.html" class="dash-card featured">
+        <div class="dash-card-icon">🔍</div>
+        <div class="dash-card-title">Find Recipes</div>
+        <div class="dash-card-desc">Tell us what's in your fridge and we'll do the rest.</div>
+      </a>
+
+      <!-- Favourites -->
+      <a href="/favourites.html" class="dash-card">
+        <div class="dash-card-icon">❤️</div>
+        <div class="dash-card-title">My Favourites</div>
+        <div class="dash-card-desc">Recipes you've saved to make again.</div>
+      </a>
+
+      <!-- Pantry -->
+      <a href="/pantry.html" class="dash-card">
+        <div class="dash-card-icon">🧂</div>
+        <div class="dash-card-title">My Pantry</div>
+        <div class="dash-card-desc">Manage the staples you always have on hand.</div>
+      </a>
+    </div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,12 +1,8 @@
+// index.js is kept minimal — Express's static middleware in server.js
+// already handles serving HTML files from the /public folder.
+// Add any catch-all or redirect routes here if needed in future.
+
 const express = require('express');
-const router = express.Router();
-// const db = require('../db/database');
-
-// GET /
-router.get('/', (req, res) => {
-  res.sendFile('index.html');
-});
-
-// TODO: add more routes here
+const router  = express.Router();
 
 module.exports = router;

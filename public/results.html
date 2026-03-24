@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Results — Recipe Suggester</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="/dashboard.html" class="nav-brand">🍳 Recipe Suggester</a>
+    <div class="nav-links">
+      <a href="/search.html">Find Recipes</a>
+      <a href="/favourites.html">My Favourites</a>
+      <a href="/pantry.html">My Pantry</a>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn btn-ghost" id="logout-btn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <div class="results-toolbar">
+      <div>
+        <h1 class="page-title">Recipe Suggestions</h1>
+        <p class="page-subtitle" style="margin-bottom:0;">Here are 5 ideas based on what you have.</p>
+      </div>
+    </div>
+
+    <!-- Recipe cards are inserted here by results.js -->
+    <div id="results-container"></div>
+
+    <!-- Bottom action buttons -->
+    <div class="results-footer" id="results-footer" style="display:none;">
+      <button class="btn btn-primary" id="find-more-btn" type="button">
+        ✨ Find More Recipes
+      </button>
+      <button class="btn btn-outline" id="adjust-search-btn" type="button">
+        ← Adjust Search
+      </button>
+    </div>
+
+    <!-- Loading state shown while fetching more recipes -->
+    <div class="loading-state" id="loading-state" style="display:none;">
+      <span class="loading-spinner">🍳</span>
+      <p>Finding more recipes…</p>
+    </div>
+  </main>
+
+  <script src="/js/shared.js"></script>
+  <script src="/js/results.js"></script>
+</body>
+</html>

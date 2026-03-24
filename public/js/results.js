@@ -3,8 +3,8 @@
 // ============================================================
 // Reads recipe data from sessionStorage (put there by search.js),
 // renders recipe cards, and handles:
+//   - Inline expand/collapse for full recipe view
 //   - Save to Favourites (heart button)
-//   - See Full Recipe (navigates to recipe.html)
 //   - Find More Recipes (new API call, excluding already-shown recipes)
 //   - Adjust Search (back to search.html with form pre-filled)
 
@@ -44,8 +44,8 @@ function renderResults(recipes) {
           <span class="badge">🕐 ${recipe.estimatedTime} min</span>
           <span class="badge">🍽️ ${escapeHtml(recipe.cuisine)}</span>
         </div>
-        <button class="btn btn-ghost" onclick="viewFullRecipe(${index})" style="margin-top:0.25rem;">
-          See Full Recipe →
+        <button class="btn btn-ghost toggle-btn" data-index="${index}" style="margin-top:0.25rem;">
+          ▼ See Full Recipe
         </button>
       </div>
       <div class="recipe-actions-col">
@@ -56,6 +56,11 @@ function renderResults(recipes) {
           aria-label="Save to favourites"
           title="Save to favourites"
         >🤍</button>
+      </div>
+
+      <!-- Expanded details panel — hidden until toggle is clicked -->
+      <div class="recipe-details" id="details-${index}">
+        ${buildDetailsHTML(recipe)}
       </div>
     `;
 
@@ -69,9 +74,84 @@ function renderResults(recipes) {
 }
 
 // -------------------------------------------------------
+// buildDetailsHTML(recipe)
+// Builds the inner HTML for the expanded recipe panel.
+// Called once per card when results are rendered.
+// -------------------------------------------------------
+function buildDetailsHTML(recipe) {
+  const pantryItems   = JSON.parse(sessionStorage.getItem('pantryItems') || '[]');
+  const pantryIngreds = recipe.ingredients?.pantry || [];
+  const freshIngreds  = recipe.ingredients?.fresh  || [];
+
+  const pantryHTML = pantryIngreds.length > 0 ? `
+    <div class="ingredient-group">
+      <div class="ingredient-group-label pantry">🧂 Pantry staples</div>
+      <ul class="ingredient-list">
+        ${pantryIngreds.map(i => `<li>${escapeHtml(i)} <span class="ingredient-tag pantry">pantry</span></li>`).join('')}
+      </ul>
+    </div>` : '';
+
+  const freshHTML = freshIngreds.length > 0 ? `
+    <div class="ingredient-group">
+      <div class="ingredient-group-label fresh">🥦 Fresh ingredients</div>
+      <ul class="ingredient-list">
+        ${freshIngreds.map(i => `<li>${escapeHtml(i)} <span class="ingredient-tag fresh">fridge</span></li>`).join('')}
+      </ul>
+    </div>` : '';
+
+  const instructions = recipe.instructions || [];
+  const stepsHTML = instructions.map(step => {
+    const clean = step.replace(/^Step\s+\d+:\s*/i, '');
+    return `<li>${escapeHtml(clean)}</li>`;
+  }).join('');
+
+  // Only render source link if it's a valid https:// URL (guards against hallucinated links)
+  const sourceHTML = recipe.sourceUrl && recipe.sourceUrl.startsWith('https://')
+    ? `<div class="recipe-source">
+        <a href="${escapeHtml(recipe.sourceUrl)}" target="_blank" rel="noopener noreferrer">
+          View Original Recipe ↗
+        </a>
+        <span class="recipe-source-note">Link suggested by AI — verify before trusting</span>
+       </div>`
+    : '';
+
+  return `
+    <div class="recipe-details-inner">
+      <div class="details-col">
+        <h3 class="details-section-title">Ingredients</h3>
+        ${pantryHTML}
+        ${freshHTML}
+        ${(!pantryIngreds.length && !freshIngreds.length) ? '<p class="text-muted text-sm">No ingredients listed.</p>' : ''}
+      </div>
+      <div class="details-col">
+        <h3 class="details-section-title">Instructions</h3>
+        ${instructions.length > 0
+          ? `<ol class="steps-list">${stepsHTML}</ol>`
+          : '<p class="text-muted text-sm">No instructions available.</p>'
+        }
+        ${sourceHTML}
+      </div>
+    </div>
+  `;
+}
+
+// -------------------------------------------------------
+// toggleExpand(index)
+// Shows or hides the details panel for a recipe card.
+// -------------------------------------------------------
+function toggleExpand(index) {
+  const details  = document.getElementById(`details-${index}`);
+  const toggleBtn = document.querySelector(`.toggle-btn[data-index="${index}"]`);
+  if (!details || !toggleBtn) return;
+
+  const isOpen = details.classList.contains('open');
+  details.classList.toggle('open', !isOpen);
+  toggleBtn.textContent = isOpen ? '▼ See Full Recipe' : '▲ Hide Recipe';
+}
+
+// -------------------------------------------------------
 // checkIfSaved(index, recipeName)
-// Asks the server if this recipe is already in the user's favourites,
-// and updates the heart icon accordingly.
+// Asks the server if this recipe is already in favourites.
 // -------------------------------------------------------
 async function checkIfSaved(index, recipeName) {
   try {
@@ -84,13 +164,13 @@ async function checkIfSaved(index, recipeName) {
       btn.dataset.favouriteId = data.id;
     }
   } catch {
-    // Non-critical — just leave the heart empty if check fails
+    // Non-critical
   }
 }
 
 // -------------------------------------------------------
 // toggleSave(index)
-// Saves or unsaves a recipe when the heart button is clicked.
+// Saves or unsaves a recipe when the heart is clicked.
 // -------------------------------------------------------
 async function toggleSave(index) {
   const recipes = JSON.parse(sessionStorage.getItem('currentRecipes') || '[]');
@@ -101,10 +181,8 @@ async function toggleSave(index) {
   const alreadySaved = btn.classList.contains('saved');
 
   if (alreadySaved) {
-    // Unsave
     const favId = btn.dataset.favouriteId;
     if (!favId) return;
-
     const res = await fetch(`/api/favourites/${favId}`, { method: 'DELETE' });
     if (res.ok) {
       btn.textContent = '🤍';
@@ -113,17 +191,16 @@ async function toggleSave(index) {
       showToast('Removed from favourites.');
     }
   } else {
-    // Save
     const res = await fetch('/api/favourites', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
-        name:         recipe.name,
-        description:  recipe.description,
-        cuisine:      recipe.cuisine,
+        name:          recipe.name,
+        description:   recipe.description,
+        cuisine:       recipe.cuisine,
         estimatedTime: recipe.estimatedTime,
-        ingredients:  recipe.ingredients,
-        instructions: recipe.instructions,
+        ingredients:   recipe.ingredients,
+        instructions:  recipe.instructions,
       }),
     });
     const data = await res.json();
@@ -137,37 +214,14 @@ async function toggleSave(index) {
 }
 
 // -------------------------------------------------------
-// viewFullRecipe(index)
-// Stores the selected recipe in sessionStorage and navigates to the full recipe page.
-// -------------------------------------------------------
-function viewFullRecipe(index) {
-  const recipes     = JSON.parse(sessionStorage.getItem('currentRecipes') || '[]');
-  const pantryItems = JSON.parse(sessionStorage.getItem('pantryItems')    || '[]');
-  const recipe      = recipes[index];
-  if (!recipe) return;
-
-  // Pass the recipe and context to recipe.html via sessionStorage
-  sessionStorage.setItem('viewingRecipe', JSON.stringify({
-    recipe,
-    pantryItems,
-    fromFavourites: false,
-    favouriteId:    null,
-  }));
-
-  window.location.href = '/recipe.html';
-}
-
-// -------------------------------------------------------
 // Find More Recipes
 // -------------------------------------------------------
-// Uses the same search preferences but asks Claude for 5 different recipes,
-// explicitly telling it which ones have already been shown.
 findMoreBtn.addEventListener('click', async () => {
-  const searchData    = JSON.parse(sessionStorage.getItem('searchData')    || '{}');
-  const shownRecipes  = JSON.parse(sessionStorage.getItem('shownRecipes')  || '[]');
+  const searchData   = JSON.parse(sessionStorage.getItem('searchData')   || '{}');
+  const shownRecipes = JSON.parse(sessionStorage.getItem('shownRecipes') || '[]');
 
-  container.innerHTML    = '';
-  footer.style.display   = 'none';
+  container.innerHTML        = '';
+  footer.style.display       = 'none';
   loadingState.style.display = 'block';
 
   try {
@@ -184,11 +238,8 @@ findMoreBtn.addEventListener('click', async () => {
 
     const { recipes, pantryItems } = await res.json();
 
-    // Update sessionStorage with the new batch
     sessionStorage.setItem('currentRecipes', JSON.stringify(recipes));
     sessionStorage.setItem('pantryItems',    JSON.stringify(pantryItems));
-
-    // Add new recipe names to the master "shown" list so they're excluded next time too
     const updatedShown = [...shownRecipes, ...recipes.map(r => r.name)];
     sessionStorage.setItem('shownRecipes', JSON.stringify(updatedShown));
 
@@ -199,7 +250,6 @@ findMoreBtn.addEventListener('click', async () => {
     loadingState.style.display = 'none';
     footer.style.display       = 'flex';
     showToast(err.message || 'Something went wrong. Please try again.', 'error');
-    // Re-render the previous results so the page isn't blank
     const previous = JSON.parse(sessionStorage.getItem('currentRecipes') || '[]');
     renderResults(previous);
   }
@@ -208,19 +258,24 @@ findMoreBtn.addEventListener('click', async () => {
 // -------------------------------------------------------
 // Adjust Search
 // -------------------------------------------------------
-// Navigates back to the search page.
-// The searchData is already in sessionStorage, so search.js will pre-fill everything.
 adjustBtn.addEventListener('click', () => {
   window.location.href = '/search.html';
 });
 
 // -------------------------------------------------------
-// Delegate heart button clicks
+// Event delegation — handle toggle and heart clicks
 // -------------------------------------------------------
 container.addEventListener('click', (e) => {
-  const btn = e.target.closest('.save-btn');
-  if (btn) {
-    toggleSave(parseInt(btn.dataset.index, 10));
+  // Toggle expand button
+  const toggleBtn = e.target.closest('.toggle-btn');
+  if (toggleBtn) {
+    toggleExpand(parseInt(toggleBtn.dataset.index, 10));
+    return;
+  }
+  // Heart / save button
+  const saveBtn = e.target.closest('.save-btn');
+  if (saveBtn) {
+    toggleSave(parseInt(saveBtn.dataset.index, 10));
   }
 });
 
@@ -240,14 +295,12 @@ function escapeHtml(str) {
 // Page init
 // -------------------------------------------------------
 (async () => {
-  const user = await initPage('/search.html'); // Keep "Find Recipes" highlighted
+  const user = await initPage('/search.html');
   if (!user) return;
 
-  // Load results from sessionStorage (put there by search.js)
   const recipes = JSON.parse(sessionStorage.getItem('currentRecipes') || 'null');
 
   if (!recipes) {
-    // No results in storage — user probably navigated here directly
     container.innerHTML = `
       <div class="empty-state">
         <span class="empty-state-icon">🔍</span>

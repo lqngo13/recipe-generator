@@ -1,50 +1,43 @@
 // -------------------------------------------------------
-// Recipes route: calls the Claude AI API to suggest recipes
+// Recipes route: calls the Gemini AI API to suggest recipes
 // -------------------------------------------------------
 
-const express     = require('express');
-const Anthropic   = require('@anthropic-ai/sdk');
-const db          = require('../db/database');
-const requireAuth = require('../middleware/requireAuth');
+const express                = require('express');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const db                     = require('../db/database');
+const requireAuth            = require('../middleware/requireAuth');
 
-const router     = express.Router();
-const anthropic  = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const router = express.Router();
+const genAI  = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model  = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 router.use(requireAuth);
 
 // -------------------------------------------------------
 // Cuisine instruction builder
 // -------------------------------------------------------
-// This function translates the user's cuisine checkbox selections into a clear
-// instruction that gets added to the AI prompt.
-//
-// Key rule: sub-cuisines (like Vietnamese) override broader categories (like Asian).
-// This structure makes it easy to add Thai, Japanese, Korean, etc. in V2 —
-// just add them to the subCuisines array below.
+// Translates cuisine checkbox selections into a clear AI instruction.
+// Sub-cuisines (like Vietnamese) override their parent category (Asian).
+// To add more sub-cuisines in V2, just add them to the subCuisines array.
 function buildCuisineInstruction(cuisines) {
-  // List of specific sub-cuisines that override their parent category
   // V2: add 'Thai', 'Japanese', 'Korean', 'Chinese' etc. here
-  const subCuisines = ['Vietnamese'];
-
-  const selectedSubs = cuisines.filter(c => subCuisines.includes(c));
+  const subCuisines    = ['Vietnamese'];
+  const selectedSubs   = cuisines.filter(c => subCuisines.includes(c));
 
   if (selectedSubs.length > 0) {
-    // A sub-cuisine was selected — be strict, don't suggest anything else
     return `You MUST suggest only ${selectedSubs.join(' or ')} recipes. Do not suggest any other cuisine types, including other Asian cuisines.`;
   }
-
   if (cuisines.includes('Any') || cuisines.length === 0) {
     return 'You may suggest recipes from any cuisine.';
   }
-
   return `Suggest recipes from these cuisines only: ${cuisines.join(', ')}.`;
 }
 
 // -------------------------------------------------------
 // JSON extractor
 // -------------------------------------------------------
-// Claude sometimes wraps its JSON response in markdown code blocks.
-// This function strips those out so we can parse the raw JSON.
+// Gemini sometimes wraps its response in markdown code blocks.
+// This strips those out so we can parse the raw JSON.
 function extractJSON(text) {
   const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (match) return match[1].trim();
@@ -54,16 +47,14 @@ function extractJSON(text) {
 // -------------------------------------------------------
 // POST /api/recipes/search
 // -------------------------------------------------------
-// Main endpoint — takes the user's search inputs, fetches their pantry from the DB,
-// builds a prompt, calls Claude, and returns 5 recipe suggestions.
 router.post('/search', async (req, res) => {
   const {
-    fridgeIngredients,  // string: "chicken, lemon, broccoli"
-    time,               // number: minutes available
-    cuisines,           // array: ["Asian", "Vietnamese"]
-    grain,              // string: "Rice" or "No preference"
-    notes,              // string: "nothing spicy"
-    excludeRecipes      // array: recipe names to exclude (used by "Find More Recipes")
+    fridgeIngredients,
+    time,
+    cuisines,
+    grain,
+    notes,
+    excludeRecipes
   } = req.body;
 
   // Fetch this user's saved pantry items from the database
@@ -72,12 +63,10 @@ router.post('/search', async (req, res) => {
 
   const cuisineInstruction = buildCuisineInstruction(cuisines || []);
 
-  // If "Find More" was clicked, tell Claude not to repeat the previous results
   const excludeNote = excludeRecipes && excludeRecipes.length > 0
     ? `\nIMPORTANT: Do NOT suggest any of these recipes — they have already been shown: ${excludeRecipes.join(', ')}.`
     : '';
 
-  // Build the prompt we'll send to Claude
   const prompt = `You are a helpful recipe assistant. Suggest exactly 5 recipes based on the following inputs.
 
 Fresh ingredients available: ${fridgeIngredients || 'not specified'}
@@ -104,29 +93,23 @@ Each object must follow this exact structure:
   "instructions": [
     "Step 1: Do this.",
     "Step 2: Then do this."
-  ]
+  ],
+  "sourceUrl": null
 }
 
 Rules:
-- estimatedTime must be a plain number (minutes), and must fit within the time available
+- estimatedTime must be a plain number (minutes), fitting within the time available
 - pantry array should only contain items from the provided pantry staples list
 - fresh array should only contain items from the provided fresh ingredients list
-- Keep instructions clear and beginner-friendly — assume the user is not a trained chef
-- Each recipe should be genuinely different from the others`;
+- Keep instructions clear and beginner-friendly
+- Each recipe should be genuinely different from the others
+- sourceUrl: ONLY include a real URL if this recipe comes from a well-known published source you are certain about (e.g. seriouseats.com, bonappetit.com, allrecipes.com, bbcgoodfood.com). If the recipe is a generic suggestion or you have any doubt the URL exists, set sourceUrl to null. Do not guess or invent URLs.`;
 
   try {
-    const message = await anthropic.messages.create({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 4096,
-      messages:   [{ role: 'user', content: prompt }]
-    });
-
-    // Extract and parse the JSON from Claude's response
-    const responseText = extractJSON(message.content[0].text);
+    const result       = await model.generateContent(prompt);
+    const responseText = extractJSON(result.response.text());
     const recipes      = JSON.parse(responseText);
 
-    // Return both the recipes and the pantry items so the frontend
-    // can label ingredients as "pantry" or "fresh" in the full recipe view
     res.json({ recipes, pantryItems });
 
   } catch (error) {

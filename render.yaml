@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: recipe-generator
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false   # Set this in Render's dashboard — never commit the real value
+      - key: GEMINI_API_KEY
+        sync: false   # Set this in Render's dashboard
+      - key: SESSION_SECRET
+        sync: false   # Set this in Render's dashboard — use a long random string

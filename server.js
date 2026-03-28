@@ -38,6 +38,15 @@ app.use('/api/recipes',    require('./routes/recipes'));     // Claude AI recipe
 app.use('/api/favourites', require('./routes/favourites')); // Saved recipes
 
 // --- Start server ---
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+// Wait for the database tables to be created before accepting connections
+const db = require('./db/database');
+db._ready
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Database initialisation failed:', err.message);
+    process.exit(1);
+  });

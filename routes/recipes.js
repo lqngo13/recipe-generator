@@ -86,7 +86,10 @@ router.post('/search', async (req, res) => {
     excludeRecipes
   } = req.body;
 
-  const pantryRows  = db.prepare('SELECT ingredient FROM pantry WHERE user_id = ?').all(req.session.userId);
+  const { rows: pantryRows } = await db.query(
+    'SELECT ingredient FROM pantry WHERE user_id = $1',
+    [req.session.userId]
+  );
   const pantryItems = pantryRows.map(r => r.ingredient);
 
   const cuisineInstruction = buildCuisineInstruction(cuisines || []);

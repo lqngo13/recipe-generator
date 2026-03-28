@@ -13,37 +13,46 @@ router.use(requireAuth);
 
 // GET /api/pantry
 // Returns all pantry items for the logged-in user
-router.get('/', (req, res) => {
-  const items = db
-    .prepare('SELECT id, ingredient FROM pantry WHERE user_id = ? ORDER BY ingredient ASC')
-    .all(req.session.userId);
-
-  res.json(items);
+router.get('/', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, ingredient FROM pantry WHERE user_id = $1 ORDER BY ingredient ASC',
+      [req.session.userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Pantry GET error:', err.message);
+    res.status(500).json({ error: 'Failed to load pantry.' });
+  }
 });
 
 // POST /api/pantry
 // Replaces the user's entire pantry with a new list
 // Expects: { ingredients: ["salt", "pepper", "olive oil", ...] }
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { ingredients } = req.body;
 
   if (!Array.isArray(ingredients)) {
     return res.status(400).json({ error: 'ingredients must be an array.' });
   }
 
-  // Delete all existing pantry items for this user, then re-insert the new list.
-  // This is simpler than trying to figure out what changed.
-  db.prepare('DELETE FROM pantry WHERE user_id = ?').run(req.session.userId);
+  try {
+    // Delete all existing pantry items for this user, then re-insert the new list.
+    // This is simpler than trying to figure out what changed.
+    await db.query('DELETE FROM pantry WHERE user_id = $1', [req.session.userId]);
 
-  const insert = db.prepare('INSERT INTO pantry (user_id, ingredient) VALUES (?, ?)');
-  for (const ingredient of ingredients) {
-    const trimmed = ingredient.trim();
-    if (trimmed) {
-      insert.run(req.session.userId, trimmed);
-    }
+    const trimmed = ingredients.map(i => i.trim()).filter(Boolean);
+    await Promise.all(
+      trimmed.map(ingredient =>
+        db.query('INSERT INTO pantry (user_id, ingredient) VALUES ($1, $2)', [req.session.userId, ingredient])
+      )
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Pantry POST error:', err.message);
+    res.status(500).json({ error: 'Failed to save pantry.' });
   }
-
-  res.json({ success: true });
 });
 
 module.exports = router;

@@ -3,8 +3,10 @@
 // Usage: node db/seed.js
 // -------------------------------------------------------
 
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+
 const bcrypt = require('bcryptjs');
-const db     = require('./database');
+const pool   = require('./database');
 
 const SALT_ROUNDS = 10;
 
@@ -28,35 +30,57 @@ const DEFAULT_PANTRY = [
   'Butter', 'Eggs',
 ];
 
-console.log('Seeding users...\n');
+async function seed() {
+  // Wait for the DB init (table creation) to finish before seeding
+  await pool._ready;
 
-for (const user of users) {
-  // Create user if they don't exist yet
-  let userId;
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(user.username);
+  console.log('Seeding users...\n');
 
-  if (existing) {
-    console.log(`  "${user.username}" already exists — skipping account creation.`);
-    userId = existing.id;
-  } else {
-    const hashedPassword = bcrypt.hashSync(user.password, SALT_ROUNDS);
-    const result = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(user.username, hashedPassword);
-    userId = result.lastInsertRowid;
-    console.log(`  Created user: ${user.username}`);
-  }
+  for (const user of users) {
+    let userId;
 
-  // Add default pantry items only if this user's pantry is currently empty
-  const pantryCount = db.prepare('SELECT COUNT(*) as count FROM pantry WHERE user_id = ?').get(userId).count;
+    const { rows } = await pool.query(
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+      [user.username]
+    );
 
-  if (pantryCount === 0) {
-    const insert = db.prepare('INSERT INTO pantry (user_id, ingredient) VALUES (?, ?)');
-    for (const item of DEFAULT_PANTRY) {
-      insert.run(userId, item);
+    if (rows[0]) {
+      console.log(`  "${user.username}" already exists — skipping account creation.`);
+      userId = rows[0].id;
+    } else {
+      const hashedPassword = bcrypt.hashSync(user.password, SALT_ROUNDS);
+      const { rows: inserted } = await pool.query(
+        'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id',
+        [user.username, hashedPassword]
+      );
+      userId = inserted[0].id;
+      console.log(`  Created user: ${user.username}`);
     }
-    console.log(`  Added ${DEFAULT_PANTRY.length} default pantry items for ${user.username}.`);
-  } else {
-    console.log(`  "${user.username}" already has pantry items — skipping defaults.`);
+
+    // Add default pantry items only if this user's pantry is currently empty
+    const { rows: countRows } = await pool.query(
+      'SELECT COUNT(*) AS count FROM pantry WHERE user_id = $1',
+      [userId]
+    );
+    const pantryCount = parseInt(countRows[0].count, 10);
+
+    if (pantryCount === 0) {
+      await Promise.all(
+        DEFAULT_PANTRY.map(item =>
+          pool.query('INSERT INTO pantry (user_id, ingredient) VALUES ($1, $2)', [userId, item])
+        )
+      );
+      console.log(`  Added ${DEFAULT_PANTRY.length} default pantry items for ${user.username}.`);
+    } else {
+      console.log(`  "${user.username}" already has pantry items — skipping defaults.`);
+    }
   }
+
+  console.log('\nDone. You can now start the server with: npm run dev');
+  await pool.end();
 }
 
-console.log('\nDone. You can now start the server with: npm run dev');
+seed().catch(err => {
+  console.error('Seed failed:', err.message);
+  process.exit(1);
+});

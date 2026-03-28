@@ -10,33 +10,42 @@ const router = express.Router();
 
 // POST /auth/login
 // The frontend sends { username, password } and we check the credentials
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
-  // Find the user by username (case-insensitive because of COLLATE NOCASE on the table)
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  try {
+    // LOWER() on both sides gives us case-insensitive lookup (replaces SQLite's COLLATE NOCASE)
+    const { rows } = await db.query(
+      'SELECT * FROM users WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
+    const user = rows[0];
 
-  if (!user) {
-    // Don't reveal whether the username or password was wrong — just say "invalid"
-    return res.status(401).json({ error: 'Invalid username or password.' });
+    if (!user) {
+      // Don't reveal whether the username or password was wrong — just say "invalid"
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
+
+    // Compare the submitted plain-text password against the stored hash
+    const passwordMatch = bcrypt.compareSync(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
+
+    // Store the user's ID and username in the session
+    // This is what keeps them "logged in" as they navigate between pages
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+
+    res.json({ success: true, username: user.username });
+  } catch (err) {
+    console.error('Login error:', err.message);
+    res.status(500).json({ error: 'Login failed. Please try again.' });
   }
-
-  // Compare the submitted plain-text password against the stored hash
-  const passwordMatch = bcrypt.compareSync(password, user.password);
-  if (!passwordMatch) {
-    return res.status(401).json({ error: 'Invalid username or password.' });
-  }
-
-  // Store the user's ID and username in the session
-  // This is what keeps them "logged in" as they navigate between pages
-  req.session.userId   = user.id;
-  req.session.username = user.username;
-
-  res.json({ success: true, username: user.username });
 });
 
 // POST /auth/logout
